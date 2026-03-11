@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tennis League</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #0a0f0a;
+    font-family: 'DM Sans', Georgia, sans-serif;
+    color: #e8e0d0;
+    background-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,185,64,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(64,140,185,0.05) 0%, transparent 70%);
+  }
+  .header {
+    padding: 48px 24px 32px;
+    text-align: center;
+    border-bottom: 1px solid rgba(124,185,64,0.2);
+  }
+  .header-sub {
+    font-size: 0.8rem; letter-spacing: 0.22em;
+    text-transform: uppercase; color: #7cb940; opacity: 0.8; margin-bottom: 8px;
+  }
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 900; color: #fff; line-height: 1;
+  }
+  .header-title span { color: #7cb940; }
+  .tabs {
+    display: flex; justify-content: center;
+    padding: 24px 16px 0; flex-wrap: wrap; gap: 4px;
+  }
+  .tab {
+    font-size: 0.78rem; letter-spacing: 0.12em;
+    text-transform: uppercase; font-weight: 500;
+    padding: 10px 22px; background: none;
+    border: 1px solid rgba(124,185,64,0.25);
+    color: #7a8a72; cursor: pointer; transition: all 0.2s;
+    border-radius: 4px;
+  }
+  .tab.active { background: #7cb940; color: #0a0f0a; border-color: #7cb940; }
+  .tab:hover:not(.active) { color: #e8e0d0; border-color: rgba(124,185,64,0.5); }
+  .main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(124,185,64,0.15);
+    border-radius: 8px; padding: 28px; margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem; font-weight: 700; color: #fff;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+  }
+  .card-title::before {
+    content: ''; width: 3px; height: 18px;
+    background: #7cb940; border-radius: 2px; flex-shrink: 0;
+  }
+  .input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .input {
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(124,185,64,0.2);
+    color: #e8e0d0; padding: 10px 14px; border-radius: 5px;
+    outline: none; transition: border-color 0.2s; flex: 1; min-width: 120px;
+  }
+  .input:focus { border-color: #7cb940; }
+  .input option { background: #1a2a1a; }
+  .btn {
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 20px; border-radius: 5px; cursor: pointer;
+    border: none; transition: all 0.18s; white-space: nowrap;
+  }
+  .btn-primary { background: #7cb940; color: #0a0f0a; }
+  .btn-primary:hover { background: #8fd44a; }
+  .btn-ghost { background: transparent; color: #7a8a72; border: 1px solid rgba(124,185,64,0.2); }
+  .btn-ghost:hover { color: #7cb940; border-color: #7cb940; }
+  .btn-danger { background: rgba(220,80,60,0.15); color: #e07060; border: 1px solid rgba(220,80,60,0.2); }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #7cb940; padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid rgba(124,185,64,0.2); font-weight: 500;
+  }
+  th:not(:nth-child(1)):not(:nth-child(2)) { text-align: center; }
+  td {
+    padding: 13px 12px; font-size: 0.9rem; color: #c8c0b0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  td:not(:nth-child(1)):not(:nth-child(2)) { text-align: center; }
+  tr:hover td { background: rgba(124,185,64,0.04); }
+  .pts { color: #7cb940; font-weight: 700; font-size: 1rem; }
+  .player-name-cell { color: #e8e0d0; font-weight: 500; }
+  .set-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .set-label { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #7a8a72; width: 44px; flex-shrink: 0; }
+  .score-input { width: 64px; text-align: center; flex: none; }
+  .game-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 10px;
+  }
+  .game-item:last-child { border-bottom: none; }
+  .winner-badge {
+    background: rgba(124,185,64,0.15); color: #7cb940;
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 3px; font-weight: 500;
+  }
+  .loser-name { color: #7a8a72; }
+  .game-score { color: #c8c0b0; font-size: 0.82rem; }
+  .game-date { color: #5a6a52; font-size: 0.75rem; }
+  .empty-state { text-align: center; padding: 48px 0; color: #5a6a52; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .notif {
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    font-size: 0.85rem; padding: 12px 20px; border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); font-weight: 600;
+    animation: slideIn 0.3s ease;
+  }
+  .notif.success { background: #7cb940; color: #0a0f0a; }
+  .notif.error { background: #e07060; color: #fff; }
+  @keyframes slideIn { from { transform: translateX(40px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  .player-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(124,185,64,0.1); border: 1px solid rgba(124,185,64,0.2);
+    padding: 6px 14px; border-radius: 20px; margin: 4px; font-size: 0.85rem; color: #c8c0b0;
+  }
+  .remove-btn { background: none; border: none; color: #7a8a72; cursor: pointer; font-size: 0.9rem; }
+  .remove-btn:hover { color: #e07060; }
+  .vs-badge {
+    background: rgba(124,185,64,0.15); color: #7cb940;
+    padding: 2px 10px; border-radius: 3px; font-size: 0.75rem;
+    letter-spacing: 0.1em; flex-shrink: 0; align-self: center;
+  }
+  .hidden { display: none; }
+  .sets-container { margin: 16px 0; }
+  .sets-header { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: #7a8a72; margin-bottom: 12px; }
+  .action-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+  .action-row .btn-primary { margin-left: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-sub">Club Management System</div>
+  <h1 class="header-title">Tennis <span>League</span></h1>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('standings')">Standings</button>
+  <button class="tab" onclick="showTab('add-game')">Add Game</button>
+  <button class="tab" onclick="showTab('results')">Results</button>
+  <button class="tab" onclick="showTab('players')">Players</button>
+</div>
+
+<div class="main">
+
+  <!-- STANDINGS -->
+  <div id="tab-standings" class="tab-content">
+    <div class="card">
+      <div class="card-title">League Table</div>
+      <div id="standings-body">
+        <div class="empty-state"><div class="empty-icon">🎾</div><div>Add players and record matches to see standings</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD GAME -->
+  <div id="tab-add-game" class="tab-content hidden">
+    <div class="card">
+      <div class="card-title">Record a Match</div>
+      <div id="add-game-form">
+        <div class="input-row" style="margin-bottom:20px">
+          <select class="input" id="player1-select"><option value="">Player 1</option></select>
+          <div class="vs-badge">VS</div>
+          <select class="input" id="player2-select"><option value="">Player 2</option></select>
+        </div>
+        <div class="sets-header">Set Scores (Player 1 — Player 2)</div>
+        <div id="sets-container"></div>
+        <div class="action-row">
+          <button class="btn btn-ghost" onclick="addSet()">+ Add Set</button>
+          <button class="btn btn-primary" onclick="recordGame()">Record Match</button>
+        </div>
+      </div>
+      <div id="add-game-empty" class="hidden">
+        <div class="empty-state"><div class="empty-icon">👥</div><div>Add at least 2 players in the Players tab first</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="tab-results" class="tab-content hidden">
+    <div class="card">
+      <div class="card-title">Match Results</div>
+      <div id="results-body">
+        <div class="empty-state"><div class="empty-icon">📋</div><div>No matches recorded yet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div id="tab-players" class="tab-content hidden">
+    <div class="card">
+      <div class="card-title">Manage Players</div>
+      <div class="input-row" style="margin-bottom:24px">
+        <input class="input" id="new-player-input" placeholder="Player name…" onkeydown="if(event.key==='Enter') addPlayer()">
+        <button class="btn btn-primary" onclick="addPlayer()">Add Player</button>
+      </div>
+      <div id="players-list">
+        <div class="empty-state"><div class="empty-icon">🎾</div><div>No players yet — add some above</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let players = [];
+  let games = [];
+  let setCount = 1;
+
+  function uid() { return Math.random().toString(36).substr(2,9); }
+
+  function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.remove('hidden');
+    event.target.classList.add('active');
+    if (name === 'add-game') refreshAddGameForm();
+    if (name === 'standings') renderStandings();
+    if (name === 'results') renderResults();
+    if (name === 'players') renderPlayers();
+  }
+
+  function showNotif(msg, type='success') {
+    const existing = document.querySelector('.notif');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'notif ' + type;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2800);
+  }
+
+  function addPlayer() {
+    const input = document.getElementById('new-player-input');
+    const name = input.value.trim();
+    if (!name) return;
+    if (players.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+      showNotif('Player already exists', 'error'); return;
+    }
+    players.push({ id: uid(), name });
+    input.value = '';
+    renderPlayers();
+    showNotif(name + ' added to league!');
+  }
+
+  function removePlayer(id) {
+    const p = players.find(x => x.id === id);
+    players = players.filter(x => x.id !== id);
+    games = games.filter(g => g.winnerId !== id && g.loserId !== id);
+    renderPlayers();
+    renderStandings();
+    renderResults();
+    if (p) showNotif(p.name + ' removed');
+  }
+
+  function renderPlayers() {
+    const el = document.getElementById('players-list');
+    if (players.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎾</div><div>No players yet — add some above</div></div>';
+      return;
+    }
+    el.innerHTML = players.map(p =>
+      `<span class="player-pill">${p.name} <button class="remove-btn" onclick="removePlayer('${p.id}')">✕</button></span>`
+    ).join('');
+  }
+
+  function refreshAddGameForm() {
+    const form = document.getElementById('add-game-form');
+    const empty = document.getElementById('add-game-empty');
+    if (players.length < 2) { form.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+    form.classList.remove('hidden'); empty.classList.add('hidden');
+    const opts = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    document.getElementById('player1-select').innerHTML = opts;
+    document.getElementById('player2-select').innerHTML = opts;
+    setCount = 1;
+    renderSets();
+  }
+
+  function renderSets() {
+    const c = document.getElementById('sets-container');
+    let html = '';
+    for (let i = 0; i < setCount; i++) {
+      html += `<div class="set-row">
+        <span class="set-label">Set ${i+1}</span>
+        <input class="input score-input" type="number" min="0" max="7" placeholder="0" id="set-p1-${i}">
+        <span style="color:#5a6a52">—</span>
+        <input class="input score-input" type="number" min="0" max="7" placeholder="0" id="set-p2-${i}">
+        ${setCount > 1 ? `<button class="btn btn-danger" style="padding:8px 12px" onclick="removeSet(${i})">✕</button>` : ''}
+      </div>`;
+    }
+    c.innerHTML = html;
+  }
+
+  function addSet() {
+    if (setCount < 5) { setCount++; renderSets(); }
+  }
+
+  function removeSet(i) {
+    // collect current values
+    let vals = [];
+    for (let j = 0; j < setCount; j++) vals.push({ p1: document.getElementById('set-p1-'+j)?.value, p2: document.getElementById('set-p2-'+j)?.value });
+    vals.splice(i, 1);
+    setCount--;
+    renderSets();
+    vals.forEach((v, j) => {
+      document.getElementById('set-p1-'+j).value = v.p1;
+      document.getElementById('set-p2-'+j).value = v.p2;
+    });
+  }
+
+  function recordGame() {
+    const p1id = document.getElementById('player1-select').value;
+    const p2id = document.getElementById('player2-select').value;
+    if (!p1id || !p2id || p1id === p2id) { showNotif('Select two different players', 'error'); return; }
+
+    let p1Sets=0, p2Sets=0, p1Games=0, p2Games=0;
+    let scoreStr = [];
+    for (let i = 0; i < setCount; i++) {
+      const s1 = parseInt(document.getElementById('set-p1-'+i).value);
+      const s2 = parseInt(document.getElementById('set-p2-'+i).value);
+      if (isNaN(s1) || isNaN(s2)) { showNotif('Fill in all set scores', 'error'); return; }
+      p1Games += s1; p2Games += s2;
+      if (s1 > s2) p1Sets++; else p2Sets++;
+      scoreStr.push(s1 + '-' + s2);
+    }
+    if (p1Sets === p2Sets) { showNotif('Match must have a winner', 'error'); return; }
+
+    const winnerId = p1Sets > p2Sets ? p1id : p2id;
+    const loserId = p1Sets > p2Sets ? p2id : p1id;
+    const winnerName = players.find(p => p.id === winnerId)?.name;
+    const loserName = players.find(p => p.id === loserId)?.name;
+
+    games.push({
+      id: uid(), winnerId, loserId,
+      winnerSets: Math.max(p1Sets,p2Sets), loserSets: Math.min(p1Sets,p2Sets),
+      winnerGames: winnerId===p1id ? p1Games : p2Games,
+      loserGames: winnerId===p1id ? p2Games : p1Games,
+      score: scoreStr.join(', '), winnerName, loserName,
+      date: new Date().toLocaleDateString('en-GB')
+    });
+
+    refreshAddGameForm();
+    renderStandings();
+    renderResults();
+    showNotif(winnerName + ' wins! 🎾');
+  }
+
+  function computeStandings() {
+    const stats = {};
+    players.forEach(p => stats[p.id] = { id:p.id, name:p.name, played:0, wins:0, losses:0, setsFor:0, setsAgainst:0, gamesFor:0, gamesAgainst:0, points:0 });
+    games.forEach(g => {
+      if (!stats[g.winnerId] || !stats[g.loserId]) return;
+      stats[g.winnerId].played++; stats[g.loserId].played++;
+      stats[g.winnerId].wins++; stats[g.loserId].losses++;
+      stats[g.winnerId].points += 3;
+      stats[g.winnerId].setsFor += g.winnerSets; stats[g.winnerId].setsAgainst += g.loserSets;
+      stats[g.loserId].setsFor += g.loserSets; stats[g.loserId].setsAgainst += g.winnerSets;
+      stats[g.winnerId].gamesFor += g.winnerGames; stats[g.winnerId].gamesAgainst += g.loserGames;
+      stats[g.loserId].gamesFor += g.loserGames; stats[g.loserId].gamesAgainst += g.winnerGames;
+    });
+    return Object.values(stats).sort((a,b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const sd = (b.setsFor-b.setsAgainst)-(a.setsFor-a.setsAgainst);
+      if (sd !== 0) return sd;
+      return (b.gamesFor-b.gamesAgainst)-(a.gamesFor-a.gamesAgainst);
+    });
+  }
+
+  function renderStandings() {
+    const el = document.getElementById('standings-body');
+    const s = computeStandings();
+    if (s.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎾</div><div>Add players and record matches to see standings</div></div>';
+      return;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = `<table>
+      <thead><tr><th>#</th><th>Player</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Pts</th></tr></thead>
+      <tbody>` +
+      s.map((p,i) => `<tr>
+        <td style="color:${i<3?'#f0c040':'#7a8a72'};font-size:0.8rem;width:28px">${medals[i]||i+1}</td>
+        <td class="player-name-cell">${p.name}</td>
+        <td>${p.played}</td><td>${p.wins}</td><td>${p.losses}</td>
+        <td>${p.setsFor}-${p.setsAgainst}</td>
+        <td class="pts">${p.points}</td>
+      </tr>`).join('') +
+      `</tbody></table>`;
+  }
+
+  function renderResults() {
+    const el = document.getElementById('results-body');
+    if (games.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>No matches recorded yet</div></div>';
+      return;
+    }
+    el.innerHTML = [...games].reverse().map(g => `
+      <div class="game-item">
+        <div>
+          <span class="winner-badge">W</span>
+          <span style="margin-left:10px;color:#e8e0d0;font-weight:500">${g.winnerName}</span>
+          <span style="color:#5a6a52;margin:0 8px">def.</span>
+          <span class="loser-name">${g.loserName}</span>
+        </div>
+        <div style="text-align:right">
+          <div class="game-score">${g.score}</div>
+          <div class="game-date">${g.date}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Init
+  renderSets();
+  renderStandings();
+</script>
+</body>
+</html>
