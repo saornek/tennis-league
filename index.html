@@ -367,7 +367,16 @@
   }
 
   function addSet() {
-    if (setCount < 5) { setCount++; renderSets(); }
+    if (setCount < 5) { 
+      let vals = [];
+      for (let j = 0; j < setCount; j++) vals.push({ p1: document.getElementById('set-p1-'+j)?.value || '', p2: document.getElementById('set-p2-'+j)?.value || '' });
+      setCount++; 
+      renderSets(); 
+      vals.forEach((v, j) => {
+        document.getElementById('set-p1-'+j).value = v.p1;
+        document.getElementById('set-p2-'+j).value = v.p2;
+      });
+    }
   }
 
   function removeSet(i) {
