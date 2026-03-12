@@ -80,6 +80,8 @@
   .btn-ghost { background: transparent; color: #7a8a72; border: 1px solid rgba(124,185,64,0.2); }
   .btn-ghost:hover { color: #7cb940; border-color: #7cb940; }
   .btn-danger { background: rgba(220,80,60,0.15); color: #e07060; border: 1px solid rgba(220,80,60,0.2); }
+  .btn-info { background: rgba(64,140,185,0.15); color: #60a8e0; border: 1px solid rgba(64,140,185,0.25); }
+  .btn-info:hover { background: rgba(64,140,185,0.25); color: #80c8ff; }
   table { width: 100%; border-collapse: collapse; }
   th {
     font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
@@ -138,6 +140,33 @@
   .sets-header { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: #7a8a72; margin-bottom: 12px; }
   .action-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
   .action-row .btn-primary { margin-left: auto; }
+
+  /* Fixtures styles */
+  .fixture-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 12px;
+    flex-wrap: wrap;
+  }
+  .fixture-item:last-child { border-bottom: none; }
+  .fixture-players { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .fixture-player { color: #e8e0d0; font-weight: 500; }
+  .fixture-date-badge {
+    background: rgba(64,140,185,0.12); color: #60a8e0;
+    font-size: 0.72rem; padding: 3px 10px; border-radius: 3px;
+    letter-spacing: 0.06em; white-space: nowrap;
+  }
+  .fixture-note {
+    color: #7a8a72; font-size: 0.8rem; font-style: italic; margin-top: 2px;
+  }
+  .fixture-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .status-upcoming {
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #5a8a72; border: 1px solid rgba(90,138,114,0.3);
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .fixture-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
+  .fixture-form-row .input { min-width: 110px; }
+  .input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 </style>
 </head>
 <body>
@@ -151,6 +180,7 @@
   <button class="tab active" onclick="showTab('standings')">Standings</button>
   <button class="tab" onclick="showTab('add-game')">Add Game</button>
   <button class="tab" onclick="showTab('results')">Results</button>
+  <button class="tab" onclick="showTab('fixtures')">Fixtures</button>
   <button class="tab" onclick="showTab('players')">Players</button>
 </div>
 
@@ -199,6 +229,34 @@
     </div>
   </div>
 
+  <!-- FIXTURES -->
+  <div id="tab-fixtures" class="tab-content hidden">
+    <div class="card">
+      <div class="card-title">Schedule a Fixture</div>
+      <div id="fixtures-form">
+        <div class="fixture-form-row">
+          <select class="input" id="fixture-p1"><option value="">Player 1</option></select>
+          <div class="vs-badge">VS</div>
+          <select class="input" id="fixture-p2"><option value="">Player 2</option></select>
+          <input class="input" type="date" id="fixture-date" style="flex:0 0 auto;min-width:150px">
+          <input class="input" id="fixture-note" placeholder="Note (optional, e.g. Court 3)" style="flex:2">
+        </div>
+        <div class="action-row" style="margin-top:8px">
+          <button class="btn btn-primary" style="margin-left:auto" onclick="addFixture()">Add Fixture</button>
+        </div>
+      </div>
+      <div id="fixtures-form-empty" class="hidden">
+        <div class="empty-state"><div class="empty-icon">👥</div><div>Add at least 2 players in the Players tab first</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Upcoming Fixtures</div>
+      <div id="fixtures-body">
+        <div class="empty-state"><div class="empty-icon">📅</div><div>No fixtures scheduled yet</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- PLAYERS -->
   <div id="tab-players" class="tab-content hidden">
     <div class="card">
@@ -218,6 +276,7 @@
 <script>
   let players = [];
   let games = [];
+  let fixtures = [];
   let setCount = 1;
 
   function uid() { return Math.random().toString(36).substr(2,9); }
@@ -231,6 +290,7 @@
     if (name === 'standings') renderStandings();
     if (name === 'results') renderResults();
     if (name === 'players') renderPlayers();
+    if (name === 'fixtures') refreshFixturesTab();
   }
 
   function showNotif(msg, type='success') {
@@ -260,9 +320,11 @@
     const p = players.find(x => x.id === id);
     players = players.filter(x => x.id !== id);
     games = games.filter(g => g.winnerId !== id && g.loserId !== id);
+    fixtures = fixtures.filter(f => f.p1id !== id && f.p2id !== id);
     renderPlayers();
     renderStandings();
     renderResults();
+    renderFixtures();
     if (p) showNotif(p.name + ' removed');
   }
 
@@ -305,11 +367,19 @@
   }
 
   function addSet() {
-    if (setCount < 5) { setCount++; renderSets(); }
+    if (setCount < 5) { 
+      let vals = [];
+      for (let j = 0; j < setCount; j++) vals.push({ p1: document.getElementById('set-p1-'+j)?.value || '', p2: document.getElementById('set-p2-'+j)?.value || '' });
+      setCount++; 
+      renderSets(); 
+      vals.forEach((v, j) => {
+        document.getElementById('set-p1-'+j).value = v.p1;
+        document.getElementById('set-p2-'+j).value = v.p2;
+      });
+    }
   }
 
   function removeSet(i) {
-    // collect current values
     let vals = [];
     for (let j = 0; j < setCount; j++) vals.push({ p1: document.getElementById('set-p1-'+j)?.value, p2: document.getElementById('set-p2-'+j)?.value });
     vals.splice(i, 1);
@@ -343,6 +413,14 @@
     const winnerName = players.find(p => p.id === winnerId)?.name;
     const loserName = players.find(p => p.id === loserId)?.name;
 
+    // Check if this was a scheduled fixture and remove it
+    const fixtureMatch = fixtures.find(f =>
+      (f.p1id === p1id && f.p2id === p2id) || (f.p1id === p2id && f.p2id === p1id)
+    );
+    if (fixtureMatch) {
+      fixtures = fixtures.filter(f => f.id !== fixtureMatch.id);
+    }
+
     games.push({
       id: uid(), winnerId, loserId,
       winnerSets: Math.max(p1Sets,p2Sets), loserSets: Math.min(p1Sets,p2Sets),
@@ -355,8 +433,112 @@
     refreshAddGameForm();
     renderStandings();
     renderResults();
+    renderFixtures();
     showNotif(winnerName + ' wins! 🎾');
   }
+
+  // ---- FIXTURES ----
+
+  function refreshFixturesTab() {
+    const form = document.getElementById('fixtures-form');
+    const empty = document.getElementById('fixtures-form-empty');
+    if (players.length < 2) {
+      form.classList.add('hidden'); empty.classList.remove('hidden');
+    } else {
+      form.classList.remove('hidden'); empty.classList.add('hidden');
+      const opts = '<option value="">Select player</option>' + players.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      document.getElementById('fixture-p1').innerHTML = opts;
+      document.getElementById('fixture-p2').innerHTML = opts;
+    }
+    renderFixtures();
+  }
+
+  function addFixture() {
+    const p1id = document.getElementById('fixture-p1').value;
+    const p2id = document.getElementById('fixture-p2').value;
+    const date = document.getElementById('fixture-date').value;
+    const note = document.getElementById('fixture-note').value.trim();
+
+    if (!p1id || !p2id) { showNotif('Select both players', 'error'); return; }
+    if (p1id === p2id) { showNotif('Select two different players', 'error'); return; }
+
+    const p1name = players.find(p => p.id === p1id)?.name;
+    const p2name = players.find(p => p.id === p2id)?.name;
+
+    // Format date display
+    let dateDisplay = '';
+    if (date) {
+      const d = new Date(date + 'T00:00:00');
+      dateDisplay = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    fixtures.push({ id: uid(), p1id, p2id, p1name, p2name, date, dateDisplay, note });
+
+    // Sort fixtures by date (undated go to end)
+    fixtures.sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    });
+
+    // Clear inputs
+    document.getElementById('fixture-p1').value = '';
+    document.getElementById('fixture-p2').value = '';
+    document.getElementById('fixture-date').value = '';
+    document.getElementById('fixture-note').value = '';
+
+    renderFixtures();
+    showNotif(`${p1name} vs ${p2name} scheduled!`);
+  }
+
+  function removeFixture(id) {
+    fixtures = fixtures.filter(f => f.id !== id);
+    renderFixtures();
+    showNotif('Fixture removed');
+  }
+
+  function playFixture(id) {
+    const f = fixtures.find(x => x.id === id);
+    if (!f) return;
+    // Switch to Add Game tab and pre-select the players
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-add-game').classList.remove('hidden');
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    refreshAddGameForm();
+    document.getElementById('player1-select').value = f.p1id;
+    document.getElementById('player2-select').value = f.p2id;
+    showNotif(`Recording: ${f.p1name} vs ${f.p2name}`);
+  }
+
+  function renderFixtures() {
+    const el = document.getElementById('fixtures-body');
+    if (fixtures.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No fixtures scheduled yet</div></div>';
+      return;
+    }
+    el.innerHTML = fixtures.map(f => `
+      <div class="fixture-item">
+        <div class="fixture-players">
+          <span class="fixture-player">${f.p1name}</span>
+          <div class="vs-badge">VS</div>
+          <span class="fixture-player">${f.p2name}</span>
+          ${f.dateDisplay ? `<span class="fixture-date-badge">📅 ${f.dateDisplay}</span>` : '<span class="fixture-date-badge" style="opacity:0.5">Date TBD</span>'}
+        </div>
+        <div style="flex:1">
+          ${f.note ? `<div class="fixture-note">${f.note}</div>` : ''}
+        </div>
+        <div class="fixture-actions">
+          <span class="status-upcoming">Upcoming</span>
+          <button class="btn btn-info" style="padding:7px 14px" onclick="playFixture('${f.id}')">▶ Record</button>
+          <button class="btn btn-danger" style="padding:7px 12px" onclick="removeFixture('${f.id}')">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ---- STANDINGS & RESULTS ----
 
   function computeStandings() {
     const stats = {};
